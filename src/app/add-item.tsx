@@ -1,38 +1,70 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
 import { router } from "expo-router";
 import { useItems } from "../context/ItemContext";
+import { useGroup } from "../context/GroupContext";
 
 export default function AddItem() {
   const { addItem } = useItems();
+  const { groupId } = useGroup();
 
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [category, setCategory] = useState("Kitchen");
+  const [error, setError] = useState("");
 
-  const handleSave = () => {
-    if (!name.trim()) return;
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setError("Please enter an item name");
+      return;
+    }
 
-    addItem({
-  name,
-  quantity,
-  category,
-  purchased: false,
-});
+    setError("");
 
-    router.back();
+    const success = await addItem({
+      group_id: groupId,
+      name,
+      quantity,
+      category,
+    });
+
+    if (success) {
+      router.back();
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 50 }}
+    >
       <Text style={styles.title}>Add Item</Text>
 
       <TextInput
         placeholder="Item Name"
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+
+          if (text.trim()) {
+            setError("");
+          }
+        }}
         style={styles.input}
       />
+
+      {error ? (
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
+      ) : null}
 
       <Text style={styles.label}>Category</Text>
 
@@ -62,9 +94,11 @@ export default function AddItem() {
         style={styles.button}
         onPress={handleSave}
       >
-        <Text style={styles.buttonText}>Save Item</Text>
+        <Text style={styles.buttonText}>
+          Save Item
+        </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -80,6 +114,12 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 20,
     textAlign: "center",
+  },
+
+  errorText: {
+    color: "red",
+    marginBottom: 15,
+    fontSize: 16,
   },
 
   label: {

@@ -2,7 +2,9 @@ import React, {
   createContext,
   useContext,
   useState,
+  useEffect,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type GroupContextType = {
   groupId: string;
@@ -13,12 +15,18 @@ type GroupContextType = {
     id: string,
     name: string,
     code: string
-  ) => void;
+  ) => Promise<void>;
+
+  clearGroup: () => Promise<void>;
+
+  loading: boolean;
 };
 
 const GroupContext = createContext<
   GroupContextType | undefined
 >(undefined);
+
+const STORAGE_KEY = "home_scan_active_group";
 
 export function GroupProvider({
   children,
@@ -28,8 +36,35 @@ export function GroupProvider({
   const [groupId, setGroupId] = useState("");
   const [groupName, setGroupName] = useState("");
   const [groupCode, setGroupCode] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const setGroup = (
+  useEffect(() => {
+    loadGroup();
+  }, []);
+
+  const loadGroup = async () => {
+    try {
+      const savedGroup =
+        await AsyncStorage.getItem(STORAGE_KEY);
+
+      if (savedGroup) {
+        const group = JSON.parse(savedGroup);
+
+        setGroupId(group.groupId || "");
+        setGroupName(group.groupName || "");
+        setGroupCode(group.groupCode || "");
+      }
+    } catch (error) {
+      console.log(
+        "Error loading saved group:",
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setGroup = async (
     id: string,
     name: string,
     code: string
@@ -37,6 +72,37 @@ export function GroupProvider({
     setGroupId(id);
     setGroupName(name);
     setGroupCode(code);
+
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          groupId: id,
+          groupName: name,
+          groupCode: code,
+        })
+      );
+    } catch (error) {
+      console.log(
+        "Error saving group:",
+        error
+      );
+    }
+  };
+
+  const clearGroup = async () => {
+    setGroupId("");
+    setGroupName("");
+    setGroupCode("");
+
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      console.log(
+        "Error clearing group:",
+        error
+      );
+    }
   };
 
   return (
@@ -46,6 +112,8 @@ export function GroupProvider({
         groupName,
         groupCode,
         setGroup,
+        clearGroup,
+        loading,
       }}
     >
       {children}

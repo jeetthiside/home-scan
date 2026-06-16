@@ -1,56 +1,158 @@
-# Welcome to your Expo app 👋
+# Home Scan 🏠🛒
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Home Scan is a family grocery and household inventory management application designed to help families stay synchronized on items they need at home.
 
-## Get started
+The goal is simple: no more forgotten grocery items, duplicate purchases, or confusion about who added what to the shopping list.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Version 1 Features
 
-2. Start the app
+### Authentication
 
-   ```bash
-   npx expo start
-   ```
+* Google Sign-In using Supabase Authentication
+* Persistent login sessions
+* Secure user identification
 
-In the output, you'll find options to open the app in a
+### Group Management
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+* Create a new family/group
+* Join an existing group using a group code
+* View all groups linked to your account
+* Switch between groups
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Shared Shopping List
 
-## Get a fresh project
+* Add grocery items
+* View shared items within a group
+* Mark items as purchased
+* Delete items
 
-When you're ready, run:
+### User Experience
 
-```bash
-npm run reset-project
-```
+* Mobile-friendly design
+* Web support
+* Android support
+* iOS support
+* Simple and clean interface
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## Tech Stack
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Frontend
 
-## Learn more
+* React Native
+* Expo
+* Expo Router
+* TypeScript
 
-To learn more about developing your project with Expo, look at the following resources:
+### Backend
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+* Supabase
 
-## Join the community
+### Database
 
-Join our community of developers creating universal apps.
+* PostgreSQL (via Supabase)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Authentication
+
+* Google OAuth
+* Supabase Auth
+
+---
+
+## Database Structure
+
+### profiles
+
+Stores user information.
+
+| Column     | Type      |
+| ---------- | --------- |
+| id         | uuid      |
+| email      | text      |
+| name       | text      |
+| avatar_url | text      |
+| created_at | timestamp |
+
+### groups
+
+Stores family/group information.
+
+| Column     | Type      |
+| ---------- | --------- |
+| id         | uuid      |
+| group_name | text      |
+| group_code | text      |
+| created_at | timestamp |
+
+### memberships
+
+Connects users with groups.
+
+| Column      | Type      |
+| ----------- | --------- |
+| id          | uuid      |
+| group_id    | uuid      |
+| user_id     | uuid      |
+| member_name | text      |
+| joined_at   | timestamp |
+
+### items
+
+Stores grocery items.
+
+| Column     | Type      |
+| ---------- | --------- |
+| id         | uuid      |
+| group_id   | uuid      |
+| item_name  | text      |
+| purchased  | boolean   |
+| created_at | timestamp |
+
+---
+
+## Project Vision
+
+Home Scan aims to become a complete household management platform where family members can:
+
+* Manage grocery lists together
+* Receive real-time updates
+* Get notifications when items are added or changed
+* Track purchase history
+* Manage multiple households/groups
+
+---
+
+## Planned Features (Version 2+)
+
+* Real-time synchronization
+* Push notifications
+* Activity feed
+* Member management
+* Group owner/admin roles
+* Leave group functionality
+* Delete group functionality
+* Shopping history
+* Bill scanning and OCR
+* User profiles
+
+---
+
+## Author
+
+Built by Ridhi Sharma as an independent project to solve everyday family grocery coordination problems.
+
+---
+
+## Status
+
+Version: 1.0.0 (MVP)
+
+Current State:
+
+* Authentication Complete
+* Group Management Complete
+* Shared Shopping List Complete
+* Ready for Version 2 Development

@@ -12,19 +12,28 @@ import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { generateGroupCode } from "../utils/generateCode";
 import { useGroup } from "../context/GroupContext";
-
+import { useAuth } from "../context/AuthContext";
+ 
 export default function CreateGroup() {
+  const { session } = useAuth();
   const { setGroup } = useGroup();
 
   const [groupName, setGroupName] = useState("");
+  const [memberName, setMemberName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
-    const cleanName = groupName.trim();
+    const cleanGroupName = groupName.trim();
+    const cleanMemberName = memberName.trim();
 
-    if (!cleanName) {
+    if (!cleanGroupName) {
       setError("Please enter a group name");
+      return;
+    }
+
+    if (!cleanMemberName) {
+      setError("Please enter your name");
       return;
     }
 
@@ -38,33 +47,48 @@ export default function CreateGroup() {
         .from("groups")
         .insert([
           {
-            group_name: cleanName,
+            group_name: cleanGroupName,
             group_code: groupCode,
           },
         ])
         .select()
         .single();
 
-      if (error) {
+      if (error || !data) {
         console.log(error);
-        setError(error.message);
+        setError(error?.message || "Failed to create group");
         setLoading(false);
         return;
       }
+      console.log(
+       "Create Group User ID:",
+       session?.user?.id
+       );
+
+      const { error: membershipError } = await supabase
+        .from("memberships")
+        .insert([
+          {
+          group_id: data.id,
+          user_id: session?.user?.id,
+         member_name: cleanMemberName,
+        },
+        ]);
+
+      if (membershipError) {
+        console.log(membershipError);
+        setError(membershipError.message);
+        setLoading(false);
+        return;
+      }
+
       setGroup(
         data.id,
-       data.group_name,
+        data.group_name,
         data.group_code
-        );
+      );
 
-      router.push({
-        pathname: "/dashboard",
-        params: {
-          groupId: data.id,
-          groupName: data.group_name,
-          groupCode: data.group_code,
-        },
-      });
+      router.push("/dashboard");
     } catch (err) {
       console.log(err);
       setError("Something went wrong");
@@ -82,13 +106,31 @@ export default function CreateGroup() {
         value={groupName}
         onChangeText={(text) => {
           setGroupName(text);
-          if (text.trim()) setError("");
+
+          if (text.trim()) {
+            setError("");
+          }
+        }}
+        style={styles.input}
+      />
+
+      <TextInput
+        placeholder="Your Name"
+        value={memberName}
+        onChangeText={(text) => {
+          setMemberName(text);
+
+          if (text.trim()) {
+            setError("");
+          }
         }}
         style={styles.input}
       />
 
       {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
       ) : null}
 
       <TouchableOpacity
@@ -99,7 +141,9 @@ export default function CreateGroup() {
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.buttonText}>Create Group</Text>
+          <Text style={styles.buttonText}>
+            Create Group
+          </Text>
         )}
       </TouchableOpacity>
     </View>
@@ -118,14 +162,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 30,
     textAlign: "center",
+    color: "#f1d865",
   },
 
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#24e934",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 100,
+    marginBottom: 12,
   },
 
   errorText: {
@@ -135,7 +180,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#235347",
+    backgroundColor: "#A569BD",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -146,4 +191,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
   },
-});  
+});

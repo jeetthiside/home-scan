@@ -5,17 +5,64 @@ import {
   StyleSheet,
   ScrollView,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { useItems } from "../context/ItemContext";
+import { useGroup } from "../context/GroupContext";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 export default function Dashboard() {
-  const { items, togglePurchased, deleteItem } = useItems();
+  const {
+    items,
+    fetchItems,
+    togglePurchased,
+    deleteItem,
+  } = useItems();
 
-  const { groupName, groupCode, groupId } = useLocalSearchParams();
+  const {
+    groupId,
+    groupName,
+    groupCode,
+  } = useGroup();
 
-  const categories = ["Kitchen", "Bathroom", "Bedroom", "Other"];
+  const [showMembers, setShowMembers] =
+    useState(false);
 
-  const getCategoryEmoji = (category: string) => {
+  const [members, setMembers] = useState<
+    { member_name: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (groupId) {
+      fetchItems(groupId);
+      fetchMembers();
+    }
+  }, [groupId]);
+
+  const fetchMembers = async () => {
+    const { data, error } = await supabase
+      .from("memberships")
+      .select("member_name")
+      .eq("group_id", groupId);
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setMembers(data || []);
+  };
+
+  const categories = [
+    "Kitchen",
+    "Bathroom",
+    "Bedroom",
+    "Other",
+  ];
+
+  const getCategoryEmoji = (
+    category: string
+  ) => {
     switch (category) {
       case "Kitchen":
         return "🍳";
@@ -30,32 +77,68 @@ export default function Dashboard() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text
-      style={{
-      fontSize: 16,
-      color: "#666",
-      marginBottom: 20,
-      }}
->
-     Group Code: {groupCode}
-     </Text>
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>
+            🏠 {groupName || "My Family"}
+          </Text>
+
+          <Text style={styles.groupCode}>
+            Group Code: {groupCode}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.membersButton}
+          onPress={() =>
+            setShowMembers(!showMembers)
+          }
+        >
+          <Text style={styles.membersText}>
+            👥 Members ({members.length}){" "}
+            {showMembers ? "▲" : "▼"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showMembers && (
+        <View style={styles.membersContainer}>
+          {members.map((member, index) => (
+            <Text
+              key={index}
+              style={styles.memberName}
+            >
+              • {member.member_name}
+            </Text>
+          ))}
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => router.push("/add-item")}
+        onPress={() =>
+          router.push("/add-item")
+        }
       >
-        <Text style={styles.addButtonText}>+ Add Item</Text>
+        <Text style={styles.addButtonText}>
+          + Add Item
+        </Text>
       </TouchableOpacity>
 
       {categories.map((category) => {
         const categoryItems = items.filter(
-          (item) => item.category === category
+          (item) =>
+            item.category === category
         );
 
         return (
-          <View key={category} style={styles.section}>
+          <View
+            key={category}
+            style={styles.section}
+          >
             <Text style={styles.sectionTitle}>
-              {getCategoryEmoji(category)} {category}
+              {getCategoryEmoji(category)}{" "}
+              {category}
             </Text>
 
             {categoryItems.length === 0 ? (
@@ -63,40 +146,55 @@ export default function Dashboard() {
                 No items in this category
               </Text>
             ) : (
-              categoryItems.map((item, index) => {
-                const originalIndex = items.findIndex(
-                  (i) =>
-                    i.name === item.name &&
-                    i.quantity === item.quantity &&
-                    i.category === item.category
-                );
-
-                return (
-                  <View key={index} style={styles.itemRow}>
-                    <TouchableOpacity
-                      style={styles.itemContainer}
-                      onPress={() => togglePurchased(originalIndex)}
+              categoryItems.map((item) => (
+                <View
+                  key={item.id}
+                  style={styles.itemRow}
+                >
+                  <TouchableOpacity
+                    style={
+                      styles.itemContainer
+                    }
+                    onPress={() =>
+                      togglePurchased(
+                        item.id,
+                        item.purchased
+                      )
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.item,
+                        item.purchased &&
+                          styles.purchasedItem,
+                      ]}
                     >
-                      <Text
-                        style={[
-                          styles.item,
-                          item.purchased && styles.purchasedItem,
-                        ]}
-                      >
-                        {item.purchased ? "✓" : "•"} {item.name} -{" "}
-                        {item.quantity}
-                      </Text>
-                    </TouchableOpacity>
+                      {item.purchased
+                        ? "✓"
+                        : "•"}{" "}
+                      {item.name} -{" "}
+                      {item.quantity}
+                    </Text>
+                  </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => deleteItem(originalIndex)}
+                  <TouchableOpacity
+                    style={
+                      styles.deleteButton
+                    }
+                    onPress={() =>
+                      deleteItem(item.id)
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.deleteIcon
+                      }
                     >
-                      <Text style={styles.deleteIcon}>🗑️</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })
+                      🗑️
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ))
             )}
           </View>
         );
@@ -111,11 +209,51 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
+  headerRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "flex-start",
+  },
+
   title: {
     fontSize: 30,
     fontWeight: "bold",
     marginTop: 20,
+    marginBottom: 8,
+    color: "#090AB5",
+  },
+
+  groupCode: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 20,
+  
+  },
+
+  membersButton: {
+    backgroundColor: "#235347",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginTop: 25,
+  },
+
+  membersText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  membersContainer: {
+    backgroundColor: "#fed90a34",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+
+  memberName: {
+    fontSize: 16,
+    marginBottom: 6,
   },
 
   addButton: {
@@ -143,13 +281,14 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    color: "#777",
+    color: "#000000",
     fontStyle: "italic",
   },
 
   itemRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
@@ -163,7 +302,8 @@ const styles = StyleSheet.create({
   },
 
   purchasedItem: {
-    textDecorationLine: "line-through",
+    textDecorationLine:
+      "line-through",
     opacity: 0.5,
   },
 

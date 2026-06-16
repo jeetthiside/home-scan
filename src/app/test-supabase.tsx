@@ -1,14 +1,26 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { supabase } from "../lib/supabase";
 
 export default function TestSupabase() {
   const testConnection = async () => {
+    const GROUP_ID =
+      "9c34f583-a49d-475a-8751-322887489bfc";
+
     const { data, error } = await supabase
-      .from("groups")
+      .from("items")
       .insert([
         {
-          group_name: "Test Family",
-          group_code: "TEST123",
+          group_id: GROUP_ID,
+          name: "Milk",
+          quantity: "2",
+          category: "Kitchen",
+          purchased: "true",
         },
       ])
       .select();
@@ -16,24 +28,29 @@ export default function TestSupabase() {
     if (error) {
       console.log(error);
       Alert.alert("Error", error.message);
-    } else {
-      console.log(data);
-      Alert.alert("Success", "Group inserted into database!");
+      return;
     }
+
+    console.log(data);
+    Alert.alert(
+      "Success",
+      "Item inserted into items table!"
+    );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Supabase Test</Text>
+      <Text style={styles.title}>
+        Items Table Test
+      </Text>
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => {
-  console.log("Button Pressed");
-  testConnection();
-}}
+        onPress={testConnection}
       >
-        <Text style={styles.buttonText}>Test Connection</Text>
+        <Text style={styles.buttonText}>
+          Insert Test Item
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -44,6 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
 
   title: {
@@ -61,5 +79,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 18,
+    fontWeight: "600",
   },
-}); 
+});

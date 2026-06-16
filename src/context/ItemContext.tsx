@@ -2,25 +2,49 @@ import React, {
   createContext,
   useContext,
   useState,
-  useEffect,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "../lib/supabase";
 
-type Item = {
+export type Item = {
+  id: string;
+  group_id: string;
   name: string;
   quantity: string;
   category: string;
   purchased: boolean;
+  created_at?: string;
 };
 
 type ItemContextType = {
   items: Item[];
-  addItem: (item: Item) => void;
-  togglePurchased: (index: number) => void;
-  deleteItem: (index: number) => void;
+  loading: boolean;
+
+  fetchItems: (
+    groupId: string
+  ) => Promise<void>;
+
+  addItem: (
+    item: {
+      group_id: string;
+      name: string;
+      quantity: string;
+      category: string;
+    }
+  ) => Promise<boolean>;
+
+  togglePurchased: (
+    id: string,
+    purchased: boolean
+  ) => Promise<void>;
+
+  deleteItem: (
+    id: string
+  ) => Promise<void>;
 };
 
-const ItemContext = createContext<ItemContextType | undefined>(undefined);
+const ItemContext = createContext<
+  ItemContextType | undefined
+>(undefined);
 
 export function ItemProvider({
   children,
@@ -28,62 +52,122 @@ export function ItemProvider({
   children: React.ReactNode;
 }) {
   const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Load saved items when app starts
-  useEffect(() => {
-    loadItems();
-  }, []);
+  const fetchItems = async (
+    groupId: string
+  ) => {
+    if (!groupId) return;
 
-  // Save whenever items change
-  useEffect(() => {
-    saveItems();
-  }, [items]);
+    setLoading(true);
 
-  const loadItems = async () => {
-    try {
-      const savedItems = await AsyncStorage.getItem("homeScanItems");
+    const { data, error } = await supabase
+      .from("items")
+      .select("*")
+      .eq("group_id", groupId)
+      .order("created_at", {
+        ascending: true,
+      });
 
-      if (savedItems) {
-        setItems(JSON.parse(savedItems));
-      }
-    } catch (error) {
-      console.log("Error loading items:", error);
+    setLoading(false);
+
+    if (error) {
+      console.log(error);
+      return;
     }
+
+    setItems(data || []);
   };
 
-  const saveItems = async () => {
-    try {
-      await AsyncStorage.setItem(
-        "homeScanItems",
-        JSON.stringify(items)
-      );
-    } catch (error) {
-      console.log("Error saving items:", error);
+  const addItem = async (
+    item: {
+      group_id: string;
+      name: string;
+      quantity: string;
+      category: string;
     }
+  ) => {
+    const { data, error } = await supabase
+      .from("items")
+      .insert([
+        {
+          group_id: item.group_id,
+          name: item.name,
+          quantity: item.quantity,
+          category: item.category,
+          purchased: false,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.log(error);
+      return false;
+    }
+
+    setItems((prev) => [
+      ...prev,
+      data,
+    ]);
+
+    return true;
   };
 
-  const addItem = (item: Item) => {
-    setItems((prev) => [...prev, item]);
-  };
+  const togglePurchased = async (
+    id: string,
+    purchased: boolean
+  ) => {
+    const { error } = await supabase
+      .from("items")
+      .update({
+        purchased: !purchased,
+      })
+      .eq("id", id);
 
-  const togglePurchased = (index: number) => {
+    if (error) {
+      console.log(error);
+      return;
+    }
+
     setItems((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? { ...item, purchased: !item.purchased }
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              purchased: !purchased,
+            }
           : item
       )
     );
   };
 
-  const deleteItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+  const deleteItem = async (
+    id: string
+  ) => {
+    const { error } = await supabase
+      .from("items")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    setItems((prev) =>
+      prev.filter(
+        (item) => item.id !== id
+      )
+    );
   };
 
   return (
     <ItemContext.Provider
       value={{
         items,
+        loading,
+        fetchItems,
         addItem,
         togglePurchased,
         deleteItem,
@@ -98,7 +182,9 @@ export function useItems() {
   const context = useContext(ItemContext);
 
   if (!context) {
-    throw new Error("useItems must be used inside ItemProvider");
+    throw new Error(
+      "useItems must be used inside ItemProvider"
+    );
   }
 
   return context;
