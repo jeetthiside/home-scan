@@ -142,7 +142,7 @@ Home Scan aims to become a complete household management platform where family m
 
 ## Author
 
-Built by Ridhi Sharma as an independent project to solve everyday family grocery coordination problems.
+Built by Jeet Sharma as an independent project to solve everyday family grocery coordination problems.
 
 ---
 
