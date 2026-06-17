@@ -153,6 +153,6 @@ Version: 1.0.0 (MVP)
 Current State:
 
 * Authentication Complete
-* Group Management Complete
+* Group Management Complete ( create group, join group ) 
 * Shared Shopping List Complete
 * Ready for Version 2 Development
