@@ -129,14 +129,12 @@ Home Scan aims to become a complete household management platform where family m
 
 * Real-time synchronization
 * Push notifications
-* Activity feed
-* Member management
-* Group owner/admin roles
+* Custom code genration by users 
+* Purchase history
+* Add multiple items at single time
 * Leave group functionality
 * Delete group functionality
-* Shopping history
-* Bill scanning and OCR
-* User profiles
+* Navigation corrections 
 
 ---
 
